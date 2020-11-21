@@ -1,8 +1,8 @@
-use serde_json::Value;
-use tokio::net::TcpListener;
 use lspower::jsonrpc::Result;
 use lspower::lsp_types::*;
 use lspower::{Client, LanguageServer, LspService, Server};
+use serde_json::Value;
+use tokio::net::TcpListener;
 
 #[derive(Debug)]
 struct Backend {
@@ -73,7 +73,11 @@ impl LanguageServer for Backend {
             .log_message(MessageType::Info, "command executed!")
             .await;
 
-        match self.client.apply_edit(WorkspaceEdit::default(), Default::default()).await {
+        match self
+            .client
+            .apply_edit(WorkspaceEdit::default(), Default::default())
+            .await
+        {
             Ok(res) if res.applied => self.client.log_message(MessageType::Info, "applied").await,
             Ok(_) => self.client.log_message(MessageType::Info, "rejected").await,
             Err(err) => self.client.log_message(MessageType::Error, err).await,

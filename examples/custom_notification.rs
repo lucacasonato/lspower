@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use lspower::jsonrpc::{Error, Result};
 use lspower::lsp_types::notification::Notification;
 use lspower::lsp_types::*;
 use lspower::{Client, LanguageServer, LspService, Server};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct CustomNotificationParams {

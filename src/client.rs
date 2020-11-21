@@ -216,9 +216,16 @@ impl Client {
     /// immediately return `Err` with JSON-RPC error code `-32002` ([read more]).
     ///
     /// [read more]: https://microsoft.github.io/language-server-protocol/specification#initialize
-    pub async fn apply_edit(&self, edit: WorkspaceEdit, label: Option<String>) -> Result<ApplyWorkspaceEditResponse> {
-        self.send_request_initialized::<ApplyWorkspaceEdit>(ApplyWorkspaceEditParams { edit, label })
-            .await
+    pub async fn apply_edit(
+        &self,
+        edit: WorkspaceEdit,
+        label: Option<String>,
+    ) -> Result<ApplyWorkspaceEditResponse> {
+        self.send_request_initialized::<ApplyWorkspaceEdit>(ApplyWorkspaceEditParams {
+            edit,
+            label,
+        })
+        .await
     }
 
     /// Submits validation diagnostics for an open file with the given URI.
