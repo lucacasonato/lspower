@@ -1,0 +1,18 @@
+[package]
+name = "lspower-macros"
+version = "0.3.0"
+authors = ["Eyal Kalderon <ebkalderon@gmail.com>", "RSLint developers"]
+description = "Internal procedural macros for lspower"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/rslint/lspower"
+repository = "https://github.com/rslint/lspower"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+heck = "0.3"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", features = ["full"] }
