@@ -50,6 +50,7 @@ fn parse_method_calls<'a>(lang_server_trait: &'a ItemTrait) -> Vec<MethodCall<'a
 
     for item in &lang_server_trait.items {
         let method = match item {
+            TraitItem::Method(m) if m.sig.ident.to_string() == "request_else" => continue,
             TraitItem::Method(m) => m,
             _ => continue,
         };
@@ -243,8 +244,8 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> proc_ma
             #[cfg_attr(test, derive(serde::Serialize))]
             #[serde(untagged)]
             enum RequestKind {
-                Valid(ServerMethod),
-                Invalid { id: Option<Id>, method: String },
+                Known(ServerMethod),
+                Other { id: Option<Id>, method: String, params: Option<serde_json::Value> },
             }
 
             #[derive(Clone, Debug, PartialEq, serde::Deserialize)]
@@ -297,17 +298,18 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> proc_ma
                 use Params::*;
 
                 let method = match request.kind {
-                    RequestKind::Valid(method) => method,
-                    RequestKind::Invalid { id: Some(id), method } => {
-                        error!("method {:?} not found", method);
-                        let res = Response::error(Some(id), Error::method_not_found());
-                        return future::ok(Some(Outgoing::Response(res))).boxed();
+                    RequestKind::Known(method) => method,
+                    RequestKind::Other { id: Some(id), method, params } => {
+                       return pending
+                            .execute(id, async move { server.request_else(&method, params).await })
+                            .map(|v| Ok(Some(Outgoing::Response(v))))
+                            .boxed();
                     }
-                    RequestKind::Invalid { id: None, method } if !method.starts_with("$/") => {
+                    RequestKind::Other { id: None, method, .. } if !method.starts_with("$/") => {
                         error!("method {:?} not found", method);
                         return future::ok(None).boxed();
                     }
-                    RequestKind::Invalid { id: None, .. } => return future::ok(None).boxed(),
+                    RequestKind::Other { id: None, .. } => return future::ok(None).boxed(),
                 };
 
                 match (method, state.get()) {
