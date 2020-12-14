@@ -846,6 +846,17 @@ pub trait LanguageServer: Send + Sync + 'static {
         error!("Got a codeAction/resolve request, but it is not implemented");
         Err(Error::method_not_found())
     }
+
+    /// This handler can be used to respond to all requests that are not handled by built in request
+    /// handlers.
+    async fn request_else(&self, method: &str, params: Option<Value>) -> Result<Option<Value>> {
+        let _ = params;
+        error!(
+            "Got a {} request, but LanguageServer::request_else is not implemented",
+            method
+        );
+        Err(Error::method_not_found())
+    }
 }
 
 fn _assert_object_safe() {

@@ -149,9 +149,11 @@ impl Debug for LspService {
 mod tests {
     use async_trait::async_trait;
     use lsp_types::*;
+    use serde_json::Value;
     use tower_test::mock::Spawn;
 
     use super::*;
+    use crate::jsonrpc::Error;
     use crate::jsonrpc::Result;
 
     const INITIALIZE_REQUEST: &str =
@@ -159,6 +161,8 @@ mod tests {
     const INITIALIZED_NOTIF: &str = r#"{"jsonrpc":"2.0","method":"initialized","params":{}}"#;
     const SHUTDOWN_REQUEST: &str = r#"{"jsonrpc":"2.0","method":"shutdown","id":1}"#;
     const EXIT_NOTIF: &str = r#"{"jsonrpc":"2.0","method":"exit"}"#;
+    const CUSTOM_FOO_REQUEST: &str =
+        r#"{"jsonrpc":"2.0","method":"custom/foo","params":{"hello": "world"},"id":1}"#;
 
     #[derive(Debug, Default)]
     struct Mock;
@@ -171,6 +175,14 @@ mod tests {
 
         async fn shutdown(&self) -> Result<()> {
             Ok(())
+        }
+
+        async fn request_else(&self, method: &str, params: Option<Value>) -> Result<Option<Value>> {
+            if method == "custom/foo" {
+                Ok(params)
+            } else {
+                Err(Error::invalid_request())
+            }
         }
     }
 
@@ -229,5 +241,17 @@ mod tests {
 
         assert_eq!(service.poll_ready(), Poll::Ready(Err(ExitedError)));
         assert_eq!(service.call(initialized).await, Err(ExitedError));
+    }
+
+    #[tokio::test]
+    async fn request_else() {
+        let (service, _) = LspService::new(|_| Mock::default());
+        let mut service = Spawn::new(service);
+
+        let response: Incoming = serde_json::from_str(CUSTOM_FOO_REQUEST).unwrap();
+        let raw = r#"{"jsonrpc":"2.0","result":{"hello":"world"},"id":1}"#;
+        let ok = serde_json::from_str(raw).unwrap();
+        assert_eq!(service.poll_ready(), Poll::Ready(Ok(())));
+        assert_eq!(service.call(response.clone()).await, Ok(Some(ok)));
     }
 }
